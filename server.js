@@ -79,7 +79,28 @@ apiRouter.post('/authenticate', function(req,res){
 
 apiRouter.use(function(req,res,next){
   console.log('We have a piping hot request!')
-  next();
+  var token = req.body.token || req.headers['x-access-token'];
+
+  if (token) {
+    jwt.verify(token, superSecret, function(err, decoded){
+      if (err) {
+        console.log("err")
+
+        return res.status(403).send({
+          success: false,
+          message: 'Failed to Authenticate Token'
+        });
+      } else {
+        req.decoded = decoded
+        next();
+      }
+    });
+  } else {
+    return res.status(403).send({
+      success: false,
+      message: 'No Token Provided'
+    });
+  }
 });
 
 apiRouter.get('/',function(req,res){
