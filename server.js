@@ -3,6 +3,7 @@ var app        = express();
 var bodyParser = require('body-parser'); 
 var morgan     = require('morgan'); 
 var mongoose   = require('mongoose'); 
+var jwt        = require('jsonwebtoken');
 var port       = process.env.PORT || 8080
 
 // Connect to DB
@@ -27,6 +28,9 @@ app.use(function(req,res,next){
 // Log Requests to Console
 app.use(morgan('dev'));
 
+// Set Auth Token Secret
+var superSecret = 'hamburgerhamlet';
+
 // API Routes
 app.get('/', function(req,res){
   res.send('Welcome to the home page!')
@@ -35,6 +39,43 @@ app.get('/', function(req,res){
 // Create new router instance for API
 
 var apiRouter = express.Router();
+
+apiRouter.post('/authenticate', function(req,res){
+  User.findOne({
+    username: req.body.username
+  }).select('name username password').exec(function(err, user){
+    if (err) throw err;
+
+    if (!user) {
+      res.json({
+        success: false,
+        message: 'Auth Failed, User Not Found'
+      });
+    } else if (user) {
+      var validPassword = user.comparePassword(req.body.password);
+      if (!validPassword) {
+        res.json({
+          success: false,
+          message: 'Auth Failed.  Invalid Password'
+        })
+      } else {
+        console.log('TOKEN ISSUED');
+        var token = jwt.sign({
+          name: user.name,
+          username: user.username
+        }, superSecret, {
+          expiresInMinutes: 1440
+        });
+
+        res.json({
+          sucess: true,
+          message: 'Enjoy that Token!',
+          token: token
+        });
+      }
+    }
+  });
+});
 
 apiRouter.use(function(req,res,next){
   console.log('We have a piping hot request!')
