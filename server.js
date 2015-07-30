@@ -166,7 +166,11 @@ apiRouter.route('/users/:user_id')
       if (err) return res.send(err);
       res.json({ message: 'Successfully Deleted!'});
     });
-  })
+  });
+
+apiRouter.get('/me', function(req,res){
+  res.send(req.decoded);
+});
 
 // Register Routes for API prefix
 app.use('/api', apiRouter);
